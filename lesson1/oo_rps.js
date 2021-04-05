@@ -17,9 +17,9 @@ function createHuman() {
       let choice;
 
       while (true) {
-        console.log('Please choose rock, paper, scissors:');
+        console.log('Please choose rock, paper, scissors, lizard, spock:');
         choice = readline.question();
-        if (['rock', 'paper', 'scissors'].includes(choice)) break;
+        if (['rock', 'paper', 'scissors', 'lizard', 'spock'].includes(choice)) break;
         console.log('Sorry, invalid choice.');
       }
 
@@ -35,7 +35,7 @@ function createComputer() {
 
   let computerObject = {
     choose() {
-      const choices = ['rock', 'paper', 'scissors'];
+      const choices = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
       let randomIndex = Math.floor(Math.random() * choices.length);
       this.move = choices[randomIndex];
     },
@@ -47,6 +47,16 @@ function createComputer() {
 // let compare = function(move1, move2) {
 
 // };
+let rules = {
+  pointsToWin: 1,
+  winningChoices: {
+    rock: ['scissors', 'lizard'],
+    paper: ['rock', 'spock'],
+    scissors: ['paper', 'lizard'],
+    lizard: ['paper', 'spock'],
+    spock: ['scissors', 'rock'],
+  }
+};
 
 const RPSGame = {
   human: createHuman(),
@@ -55,27 +65,40 @@ const RPSGame = {
   displayWelcomeMessage() {
     console.log(`Welcome to Rock, Paper, Scissors!\n` +
       `The first player to win 5 times will win the game.\n` +
-      `Let's Play!`)
+      `Let's Play!`);
   },
 
-  displayRoundWinner() {
+  choosePointsToWin() {
+    let maxPointChoice;
+    while (true) {
+      console.log(`Decide on a winning amount of points for the game. Choose a number: `);
+      maxPointChoice = readline.question();
+      if (!isNaN(maxPointChoice)) break;
+    }
+    return maxPointChoice;
+  },
+
+  assessRoundWinner() {
     let humanMove = this.human.move;
     let computerMove = this.computer.move;
 
     console.log(`You chose: ${this.human.move}`);
     console.log(`Computer chose: ${this.computer.move}`);
 
-    if ((humanMove === 'rock' && computerMove === 'scissors') ||
-      (humanMove === 'paper' && computerMove === 'rock') ||
-      (humanMove === 'scissors' && computerMove === 'paper')) {
+    if (rules.winningChoices[humanMove].includes(computerMove)) {
+      this.human.score += 1;
       console.log("You Win this round!");
-    } else if ((computerMove === 'rock' && humanMove === 'scissors') ||
-      (computerMove === 'paper' && humanMove === 'rock') ||
-      (computerMove === 'scissors' && humanMove === 'paper')) {
+    } else if (rules.winningChoices[computerMove].includes(humanMove)) {
       console.log("Computer Wins this round!");
+      this.computer.score += 1;
     } else {
       console.log("This round is a tie!");
     }
+  },
+
+  displayScore() {
+    console.log(`Your Score: ${this.human.score} \n` +
+    `Computer Score: ${this.computer.score}`);
   },
 
   // updateScore() {
@@ -85,7 +108,7 @@ const RPSGame = {
   displayOverallWinner() {
     if (this.human.score === 5) {
       console.log('You WON the overall Game!!!');
-    } else console.log('You LOST! Computer won the overall game!!!')
+    } else console.log('You LOST! Computer won the overall game!!!');
   },
 
   displayGoodbyeMessage() {
@@ -102,24 +125,31 @@ const RPSGame = {
     return answer.toLowerCase()[0] === 'y';
   },
 
+  resetScores() {
+    this.human.score = 0;
+    this.computer.score = 0;
+  },
+
   // method that contains our procedural code
-  play() {
+  mainGamePlay() {
     this.displayWelcomeMessage();
+    let maxPoints = this.choosePointsToWin();
     while (true) {
-      while (this.human.score < 5 && this.computer.score < 5) {
+      while (this.human.score < maxPoints && this.computer.score < maxPoints) {
         this.human.choose();
         this.computer.choose();
-        this.updateScore();
-        this.displayRoundWinner();
+        this.assessRoundWinner();
+        this.displayScore();
       }
 
       this.displayOverallWinner();
       if (!this.playAgain()) break;
+      else this.resetScores();
     }
 
     this.displayGoodbyeMessage();
   },
 };
 
-// play method is called on the RPSGame
-RPSGame.play();
+// mainGamePlay method is called on the RPSGame
+RPSGame.mainGamePlay();

@@ -57,8 +57,8 @@ function createComputer() {
 
   let computerObject = {
     choose() {
-      let randomIndex = Math.floor(Math.random() * VALID_CHOICES.length);
-      this.move = VALID_CHOICES[randomIndex];
+      let keys = Object.keys(VALID_CHOICES);
+      this.move = keys[Math.floor(Math.random() * keys.length)];
     },
   };
 

@@ -1,4 +1,23 @@
 const readline = require('readline-sync');
+const VALID_CHOICES = {
+  rock: ['rock', 'roc', 'ro', 'r'],
+  paper: ['paper', 'pape', 'pap', 'pa', 'p'],
+  scissors: ['scissors', 'scissor', 'scisso', 'sciss', 'scis', 'sci', 'sc'],
+  lizard: ['lizard', 'lizar', 'liza', 'liz', 'li', 'l'],
+  spock: ['spock', 'spoc', 'spo', 'sp'],
+};
+// const VALID_CHOICES = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
+
+let rules = {
+  pointsToWin: 1,
+  winningChoices: {
+    rock: ['scissors', 'lizard'],
+    paper: ['rock', 'spock'],
+    scissors: ['paper', 'lizard'],
+    lizard: ['paper', 'spock'],
+    spock: ['scissors', 'rock'],
+  }
+};
 
 //createPlayer factory function
 function createPlayer() {
@@ -14,16 +33,19 @@ function createHuman() {
 
   let humanObject = {
     choose() {
-      let choice;
-
       while (true) {
         console.log('Please choose rock, paper, scissors, lizard, spock:');
-        choice = readline.question();
-        if (['rock', 'paper', 'scissors', 'lizard', 'spock'].includes(choice)) break;
-        console.log('Sorry, invalid choice.');
-      }
 
-      this.move = choice;
+        let readlineInput = readline.question();
+
+        Object.keys(VALID_CHOICES).forEach(choiceKey => {
+          if (VALID_CHOICES[choiceKey].includes(readlineInput)) {
+            this.move = choiceKey;
+          }
+        });
+        if (this.move !== null) break;
+        else console.log('Sorry, invalid choice.');
+      }
     },
   };
 
@@ -35,9 +57,8 @@ function createComputer() {
 
   let computerObject = {
     choose() {
-      const choices = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
-      let randomIndex = Math.floor(Math.random() * choices.length);
-      this.move = choices[randomIndex];
+      let randomIndex = Math.floor(Math.random() * VALID_CHOICES.length);
+      this.move = VALID_CHOICES[randomIndex];
     },
   };
 
@@ -47,25 +68,16 @@ function createComputer() {
 // let compare = function(move1, move2) {
 
 // };
-let rules = {
-  pointsToWin: 1,
-  winningChoices: {
-    rock: ['scissors', 'lizard'],
-    paper: ['rock', 'spock'],
-    scissors: ['paper', 'lizard'],
-    lizard: ['paper', 'spock'],
-    spock: ['scissors', 'rock'],
-  }
-};
 
 const RPSGame = {
   human: createHuman(),
   computer: createComputer(),
 
   displayWelcomeMessage() {
-    console.log(`Welcome to Rock, Paper, Scissors!\n` +
-      `The first player to win 5 times will win the game.\n` +
-      `Let's Play!`);
+    console.clear();
+    console.log(`Welcome to Rock, Paper, Scissors, Lizard, Spock!\n` +
+      `This is a game of strategy and luck.\n` +
+      `Let's Play!\n`);
   },
 
   choosePointsToWin() {
@@ -98,7 +110,7 @@ const RPSGame = {
 
   displayScore() {
     console.log(`Your Score: ${this.human.score} \n` +
-    `Computer Score: ${this.computer.score}`);
+      `Computer Score: ${this.computer.score}`);
   },
 
   // updateScore() {

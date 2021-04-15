@@ -19,22 +19,44 @@ let rules = {
   }
 };
 
+function createMoveMemory() {
+  return {
+    timesChosen: 0,
+    timesWon: 0
+  };
+}
+
 //createPlayer factory function
 function createPlayer() {
   return {
     move: null,
     score: 0,
+    memory: {
+      rock: createMoveMemory(),
+      paper: createMoveMemory(),
+      scissors: createMoveMemory(),
+      lizard: createMoveMemory(),
+      spock: createMoveMemory(),
+    }
   };
 }
+
+// function createReasoning() {
+//   let memoryObj =  {
+
+//   }
+// }
 
 //createHuman object
 function createHuman() {
   let playerObject = createPlayer();
 
   let humanObject = {
-    choose() {
+    chooseMove() {
       while (true) {
-        console.log('Please choose rock, paper, scissors, lizard, spock:');
+        this.move = null;
+
+        console.log('Please choose rock, paper, scissors, lizard, spock:\n');
 
         let readlineInput = readline.question();
 
@@ -47,6 +69,16 @@ function createHuman() {
         else console.log('Sorry, invalid choice.');
       }
     },
+
+    choosePointsToWin() {
+      let maxPointChoice;
+      while (true) {
+        console.log(`Decide on a winning amount of points for the game. Choose a number: `);
+        maxPointChoice = readline.question();
+        if (!isNaN(maxPointChoice)) break;
+      }
+      return maxPointChoice;
+    },
   };
 
   return Object.assign(playerObject, humanObject);
@@ -56,7 +88,7 @@ function createComputer() {
   let playerObject = createPlayer();
 
   let computerObject = {
-    choose() {
+    chooseMove() {
       let keys = Object.keys(VALID_CHOICES);
       this.move = keys[Math.floor(Math.random() * keys.length)];
     },
@@ -64,10 +96,6 @@ function createComputer() {
 
   return Object.assign(playerObject, computerObject);
 }
-
-// let compare = function(move1, move2) {
-
-// };
 
 const RPSGame = {
   human: createHuman(),
@@ -80,42 +108,52 @@ const RPSGame = {
       `Let's Play!\n`);
   },
 
-  choosePointsToWin() {
-    let maxPointChoice;
-    while (true) {
-      console.log(`Decide on a winning amount of points for the game. Choose a number: `);
-      maxPointChoice = readline.question();
-      if (!isNaN(maxPointChoice)) break;
-    }
-    return maxPointChoice;
+  displayRoundMoves() {
+    console.log(`You chose: ${this.human.move}`);
+    console.log(`Computer chose: ${this.computer.move}`);
   },
 
   assessRoundWinner() {
     let humanMove = this.human.move;
     let computerMove = this.computer.move;
 
-    console.log(`You chose: ${this.human.move}`);
-    console.log(`Computer chose: ${this.computer.move}`);
+    if (rules.winningChoices[humanMove].includes(computerMove)) return "computer";
+    else if (rules.winningChoices[computerMove].includes(humanMove)) return "human";
+    else return "tie";
+  },
 
-    if (rules.winningChoices[humanMove].includes(computerMove)) {
-      this.human.score += 1;
-      console.log("You Win this round!");
-    } else if (rules.winningChoices[computerMove].includes(humanMove)) {
-      console.log("Computer Wins this round!");
-      this.computer.score += 1;
-    } else {
-      console.log("This round is a tie!");
+  displayRoundWinner(roundWinner) {
+    if (roundWinner === "human") {
+      console.log(`YOU won this round because ${this.human.move} beats ` +
+      `${this.computer.move}!`);
+    } else if (roundWinner === "computer") {
+      console.log(`COMPUTER won this round because ${this.computer.move} ` +
+      `beats ${this.human.move}!`);
+    } else console.log(`It was a TIE!`);
+  },
+
+  updateRoundWinnerScore(roundWinner) {
+    if (roundWinner === "human") this.human.score += 1;
+    else if (roundWinner === "computer") this.computer.score += 1;
+  },
+
+  updateMemories(roundWinner) {
+    this.human.memory[this.human.move]["timesChosen"] += 1;
+    this.computer.memory[this.computer.move]["timesChosen"] += 1;
+
+    if (roundWinner === "human") {
+      this.human.memory[this.human.move]["timesWon"] += 1;
+    } else if (roundWinner === "computer") {
+      this.computer.memory[this.computer.move]["timesWon"] += 1;
     }
+    // if roundWinner is a tie, continue
   },
 
-  displayScore() {
-    console.log(`Your Score: ${this.human.score} \n` +
-      `Computer Score: ${this.computer.score}`);
+  displayScores() {
+    console.log(`   |   Your Score: ${this.human.score}   |` +
+    `   Computer Score: ${this.computer.score}   |\n` +
+    `   ---------------------------------------------`);
   },
-
-  // updateScore() {
-  //   if (this.human)
-  // }
 
   displayOverallWinner() {
     if (this.human.score === 5) {
@@ -145,13 +183,20 @@ const RPSGame = {
   // method that contains our procedural code
   mainGamePlay() {
     this.displayWelcomeMessage();
-    let maxPoints = this.choosePointsToWin();
     while (true) {
+      let maxPoints = this.human.choosePointsToWin();
       while (this.human.score < maxPoints && this.computer.score < maxPoints) {
-        this.human.choose();
-        this.computer.choose();
-        this.assessRoundWinner();
-        this.displayScore();
+        // console.clear();
+        this.displayScores();
+        this.human.chooseMove();
+        this.computer.chooseMove();
+        this.displayRoundMoves();
+        let roundWinner = this.assessRoundWinner();
+        this.displayRoundWinner(roundWinner);
+        this.updateMemories(roundWinner);
+        this.updateRoundWinnerScore(roundWinner);
+        console.log(this.human.memory); // remove later
+        console.log(this.computer.memory); // remove later
       }
 
       this.displayOverallWinner();

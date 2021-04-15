@@ -19,10 +19,15 @@ let rules = {
   }
 };
 
+// function calculateMoveWinPercentage() {
+
+// }
+
 function createMoveMemory() {
   return {
     timesChosen: 0,
-    timesWon: 0
+    timesWon: 0,
+    percentageWon: 0.00
   };
 }
 
@@ -37,15 +42,9 @@ function createPlayer() {
       scissors: createMoveMemory(),
       lizard: createMoveMemory(),
       spock: createMoveMemory(),
-    }
+    },
   };
 }
-
-// function createReasoning() {
-//   let memoryObj =  {
-
-//   }
-// }
 
 //createHuman object
 function createHuman() {
@@ -137,7 +136,7 @@ const RPSGame = {
     else if (roundWinner === "computer") this.computer.score += 1;
   },
 
-  updateMemories(roundWinner) {
+  updateMemory(roundWinner) {
     this.human.memory[this.human.move]["timesChosen"] += 1;
     this.computer.memory[this.computer.move]["timesChosen"] += 1;
 
@@ -146,6 +145,13 @@ const RPSGame = {
     } else if (roundWinner === "computer") {
       this.computer.memory[this.computer.move]["timesWon"] += 1;
     }
+
+    this.human.memory[this.human.move]["percentageWon"] =
+    this.human.memory[this.human.move]["timesWon"] /
+    this.human.memory[this.human.move]["timesChosen"];
+    this.computer.memory[this.computer.move]["percentageWon"] =
+    this.computer.memory[this.computer.move]["timesWon"] /
+    this.computer.memory[this.computer.move]["timesChosen"];
     // if roundWinner is a tie, continue
   },
 
@@ -193,7 +199,7 @@ const RPSGame = {
         this.displayRoundMoves();
         let roundWinner = this.assessRoundWinner();
         this.displayRoundWinner(roundWinner);
-        this.updateMemories(roundWinner);
+        this.updateMemory(roundWinner);
         this.updateRoundWinnerScore(roundWinner);
         console.log(this.human.memory); // remove later
         console.log(this.computer.memory); // remove later

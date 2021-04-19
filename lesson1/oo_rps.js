@@ -8,7 +8,7 @@ let rules = {
     lizard: ['lizard', 'lizar', 'liza', 'liz', 'li', 'l'],
     spock: ['spock', 'spoc', 'spo', 'sp'],
   },
-  pointsToWin: 1,
+  pointsToWin: null,
   winningChoices: {
     rock: ['scissors', 'lizard'],
     paper: ['rock', 'spock'],
@@ -78,14 +78,14 @@ function createHuman() {
     },
 
     choosePointsToWin() {
-      let maxPointChoice;
+      let pointsToWin;
       while (true) {
         console.log(`   How many points will it take for a ` +
           `player to win the game? Choose a number: `);
-        maxPointChoice = readline.question();
-        if (!isNaN(maxPointChoice)) break;
+        pointsToWin = readline.question();
+        if (!isNaN(pointsToWin)) break;
       }
-      return maxPointChoice;
+      return pointsToWin;
     },
   };
 
@@ -236,8 +236,8 @@ const RPSGame = {
   mainGamePlay() {
     this.displayWelcomeMessage();
     while (true) {
-      let maxPoints = this.human.choosePointsToWin();
-      while (this.human.score < maxPoints && this.computer.score < maxPoints) {
+      let winPoints = this.human.choosePointsToWin();
+      while (this.human.score < winPoints && this.computer.score < winPoints) {
         console.clear();
         if (this.roundCounter > 0) {
           this.displayScores();
@@ -256,7 +256,7 @@ const RPSGame = {
         // console.log(this.computer.memory); // remove later
       }
 
-      this.displayOverallWinner(maxPoints);
+      this.displayOverallWinner(winPoints);
       if (!this.playAgain()) break;
       else this.resetScores();
     }

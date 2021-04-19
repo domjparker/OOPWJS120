@@ -1,7 +1,5 @@
 const readline = require('readline-sync');
 
-// const rules.validChoices = ['rock', 'paper', 'scissors', 'lizard', 'spock'];
-
 let rules = {
   validChoices: {
     rock: ['rock', 'roc', 'ro', 'r'],
@@ -17,6 +15,14 @@ let rules = {
     scissors: ['paper', 'lizard'],
     lizard: ['paper', 'spock'],
     spock: ['scissors', 'rock'],
+  },
+
+  advantageMoves: {
+    rock: ['paper', 'spock'],
+    paper: ['scissors', 'lizard'],
+    scissors: ['rock', 'spock'],
+    lizard: ['rock', 'scissors'],
+    spock: ['lizard', 'paper'],
   }
 };
 
@@ -44,20 +50,6 @@ function createPlayer() {
       lizard: createMoveMemory(),
       spock: createMoveMemory(),
     },
-    // movePreferences: {
-    //   rock: 0,
-    //   paper: 0,
-    //   scissor: 0,
-    //   lizard: 0,
-    //   spock: 0
-    // },
-
-    calculateMovePreference(movePercentageWon) {
-      if (movePercentageWon > 0.90) return 3;
-      else if (movePercentageWon > 0.75) return 2;
-      else if (movePercentageWon > 0.60) return 1;
-      else return 0;
-    }
   };
 }
 
@@ -70,7 +62,8 @@ function createHuman() {
       while (true) {
         this.move = null;
 
-        console.log('Please choose rock, paper, scissors, lizard, spock:\n');
+        console.log('\n   Please make your choice (rock, paper, scissors, ' +
+        'lizard, spock):\n');
 
         let readlineInput = readline.question();
 
@@ -87,8 +80,8 @@ function createHuman() {
     choosePointsToWin() {
       let maxPointChoice;
       while (true) {
-        console.log(`Decide how many points it will take for a player ` +
-          `to win the game. Choose a number: `);
+        console.log(`   How many points will it take for a ` +
+          `player to win the game? Choose a number: `);
         maxPointChoice = readline.question();
         if (!isNaN(maxPointChoice)) break;
       }
@@ -103,8 +96,28 @@ function createComputer() {
   let playerObject = createPlayer();
 
   let computerObject = {
-    chooseMove() {
-      let keys = Object.keys(rules.validChoices);
+    calculateMovePreference(movePercentageWon) {
+      if (movePercentageWon > 0.90) return 2;
+      else if (movePercentageWon > 0.60) return 1;
+      else return 0;
+    },
+
+    useReasoning(compMemory) {
+      let choiceAdvantage = [];
+      Object.keys(compMemory).forEach(key => {
+        let humanMoveWinAdvantage =
+        this.calculateMovePreference(compMemory[key]["percentageOpponentWon"]);
+        if (humanMoveWinAdvantage > 0) {
+          let arrayToAdd =
+          Array(humanMoveWinAdvantage).fill(rules.advantageMoves[key]);
+          choiceAdvantage.push(arrayToAdd);
+        }
+      });
+      return choiceAdvantage.flat(3);
+    },
+
+    chooseMove(advantageArray) {
+      let keys = Object.keys(rules.validChoices).concat(advantageArray);
       this.move = keys[Math.floor(Math.random() * keys.length)];
     },
   };
@@ -115,17 +128,47 @@ function createComputer() {
 const RPSGame = {
   human: createHuman(),
   computer: createComputer(),
+  roundCounter: 0,
+  roundWinner: null,
 
   displayWelcomeMessage() {
     console.clear();
-    console.log(`Welcome to Rock, Paper, Scissors, Lizard, Spock!\n` +
-      `This is a game of strategy and luck.\n` +
-      `Let's Play!\n`);
+    console.log(`   Welcome to Rock, Paper, Scissors, Lizard, Spock!\n` +
+      `   This is a game of strategy and luck.\n` +
+      `   The computer will remember your moves and try to outwit you,\n` +
+      `   but the game will match the computer's advantage by assisting ` +
+      `your memory as well.\n` +
+      `   Let's Play!\n`);
+  },
+
+  displayScores() {
+    console.log(`   |   Your Score: ${this.human.score}   |` +
+      `   Computer Score: ${this.computer.score}   |\n` +
+      `   ---------------------------------------------`);
   },
 
   displayRoundMoves() {
-    console.log(`You chose: ${this.human.move}`);
-    console.log(`Computer chose: ${this.computer.move}`);
+    console.log(`   You chose: ${this.human.move}`);
+    console.log(`   Computer chose: ${this.computer.move}`);
+  },
+
+  displayRoundWinner() {
+    if (this.roundWinner === "human") {
+      console.log(`   YOU won this round because ${this.human.move} beats ` +
+        `${this.computer.move}!\n`);
+    } else if (this.roundWinner === "computer") {
+      console.log(`   COMPUTER won this round because ${this.computer.move} ` +
+        `beats ${this.human.move}!\n`);
+    } else console.log(`   It was a TIE!\n`);
+  },
+
+  displayHumanSuggestion() {
+    console.log(`   ASSISTED MEMORY: Percentages showing how often the ` +
+      `computer currently wins when it chooses each move:`);
+    Object.keys(this.human.memory).forEach(key => {
+      console.log(`     ${key} : ` +
+      `${this.human.memory[key]["percentageOpponentWon"] * 100}%`);
+    });
   },
 
   assessRoundWinner() {
@@ -133,32 +176,18 @@ const RPSGame = {
     let computerMove = this.computer.move;
 
     if (rules.winningChoices[humanMove].includes(computerMove)) return "human";
-    else if (rules.winningChoices[computerMove].includes(humanMove)) return "computer";
-    else return "tie";
+    else if (rules.winningChoices[computerMove].includes(humanMove)) {
+      return "computer";
+    } else return "tie";
   },
 
-  displayRoundWinner(roundWinner) {
-    if (roundWinner === "human") {
-      console.log(`YOU won this round because ${this.human.move} beats ` +
-        `${this.computer.move}!`);
-    } else if (roundWinner === "computer") {
-      console.log(`COMPUTER won this round because ${this.computer.move} ` +
-        `beats ${this.human.move}!`);
-    } else console.log(`It was a TIE!`);
-  },
-
-  updateRoundWinnerScore(roundWinner) {
-    if (roundWinner === "human") this.human.score += 1;
-    else if (roundWinner === "computer") this.computer.score += 1;
-  },
-
-  updateMemory(roundWinner) {
+  updateMemory() {
     this.human.memory[this.computer.move]["timesOpponentChose"] += 1;
     this.computer.memory[this.human.move]["timesOpponentChose"] += 1;
 
-    if (roundWinner === "human") {
+    if (this.roundWinner === "human") {
       this.computer.memory[this.human.move]["timesOpponentWon"] += 1;
-    } else if (roundWinner === "computer") {
+    } else if (this.roundWinner === "computer") {
       this.human.memory[this.computer.move]["timesOpponentWon"] += 1;
     }
 
@@ -168,55 +197,32 @@ const RPSGame = {
     this.computer.memory[this.human.move]["percentageOpponentWon"] =
       this.computer.memory[this.human.move]["timesOpponentWon"] /
       this.computer.memory[this.human.move]["timesOpponentChose"];
-    // if roundWinner is a tie, continue
+    // if this.roundWinner is a tie, game will just continue
   },
 
-  displayScores() {
-    console.log(`   |   Your Score: ${this.human.score}   |` +
-      `   Computer Score: ${this.computer.score}   |\n` +
-      `   ---------------------------------------------`);
-  },
-
-  displayHumanSuggestion() {
-    // take percentageOpponentWon for each of the 5 choices, return list of choices as suggestions that would be preferable
-    // let choiceFavorability = [
-    //   ["rock", this.human.memory["rock"].percentageOpponentWon],
-    //   ["paper", this.human.memory["paper"].percentageOpponentWon],
-    //   ["scissors", this.human.memory["scissors"].percentageOpponentWon],
-    //   ["lizard", this.human.memory["lizard"].percentageOpponentWon],
-    //   ["spock", this.human.memory["spock"].percentageOpponentWon],
-    // ].sort((a, b) => {
-    //   if (a[1] > b[1]) {
-    //     return -1;
-    //   } else if (a[1] < b[1]) {
-    //     return 1;
-    //   }
-    //   return 0;
-    // });
-    // return choiceFavorability.map(subArr => subArr[0]);
-    console.log(`List of percentages for how often the computer wins when ` +
-    `choosing each move: \n`);
-    Object.keys(this.human.memory).forEach(key => {
-      console.log(`   ${key} : ${this.human.memory[key]["percentageOpponentWon"] * 100}%`);
-    });
+  updateRoundWinnerScore() {
+    if (this.roundWinner === "human") this.human.score += 1;
+    else if (this.roundWinner === "computer") this.computer.score += 1;
   },
 
   displayOverallWinner(maxPoints) {
     if (this.human.score === maxPoints) {
-      console.log('You WON the overall Game!!!');
-    } else console.log('You LOST! Computer won the overall game!!!');
+      console.log('   You WON the overall Game!!!');
+    } else console.log('   You LOST! Computer won the overall game!!!');
   },
 
   displayGoodbyeMessage() {
-    console.log('Thanks for playing Rock, Paper, Scissors. Goodbye.');
+    console.log('   Thanks for playing Rock, Paper, Scissors. Goodbye.');
   },
 
   playAgain() {
     let answer;
     while (true) {
-      console.log('Would you like to play again? (y/n)');
+      console.log('   Would you like to play again? (y/n)');
       answer = readline.question();
-      if (answer.toLowerCase()[0] === 'y' || answer.toLowerCase()[0] === 'n') break;
+      if (answer.toLowerCase()[0] === 'y' || answer.toLowerCase()[0] === 'n') {
+        break;
+      }
     }
     return answer.toLowerCase()[0] === 'y';
   },
@@ -232,17 +238,21 @@ const RPSGame = {
     while (true) {
       let maxPoints = this.human.choosePointsToWin();
       while (this.human.score < maxPoints && this.computer.score < maxPoints) {
-        // console.clear();
-        this.displayScores();
-        console.log(this.displayHumanSuggestion())
+        console.clear();
+        if (this.roundCounter > 0) {
+          this.displayScores();
+          this.displayRoundMoves();
+          this.displayRoundWinner(this.roundWinner);
+          this.displayHumanSuggestion()
+        }
+        let computerReasonedAdvantage =
+          this.computer.useReasoning(this.computer.memory);
         this.human.chooseMove();
-        this.computer.chooseMove();
-        this.displayRoundMoves();
-        let roundWinner = this.assessRoundWinner();
-        this.displayRoundWinner(roundWinner);
-        this.updateMemory(roundWinner);
-        this.updateRoundWinnerScore(roundWinner);
-        // console.log(this.human.memory); // remove later
+        this.computer.chooseMove(computerReasonedAdvantage);
+        this.roundWinner = this.assessRoundWinner();
+        this.updateMemory();
+        this.updateRoundWinnerScore();
+        this.roundCounter += 1;
         // console.log(this.computer.memory); // remove later
       }
 

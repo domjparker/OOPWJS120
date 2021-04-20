@@ -63,9 +63,9 @@ function createHuman() {
         this.move = null;
 
         console.log('\n   Please make your choice (rock, paper, scissors, ' +
-        'lizard, spock):\n');
+          'lizard, spock):\n');
 
-        let readlineInput = readline.question();
+        let readlineInput = readline.question().toLowerCase();
 
         Object.keys(rules.validChoices).forEach(choiceKey => {
           if (rules.validChoices[choiceKey].includes(readlineInput)) {
@@ -82,7 +82,7 @@ function createHuman() {
       while (true) {
         console.log(`   How many points will it take for a ` +
           `player to win the game? Choose a number: `);
-        pointsToWin = readline.question();
+        pointsToWin = Number(readline.question());
         if (!isNaN(pointsToWin)) break;
       }
       return pointsToWin;
@@ -106,10 +106,10 @@ function createComputer() {
       let choiceAdvantage = [];
       Object.keys(compMemory).forEach(key => {
         let humanMoveWinAdvantage =
-        this.calculateMovePreference(compMemory[key]["percentageOpponentWon"]);
+          this.calculateMovePreference(compMemory[key]["percentageOpponentWon"]);
         if (humanMoveWinAdvantage > 0) {
           let arrayToAdd =
-          Array(humanMoveWinAdvantage).fill(rules.advantageMoves[key]);
+            Array(humanMoveWinAdvantage).fill(rules.advantageMoves[key]);
           choiceAdvantage.push(arrayToAdd);
         }
       });
@@ -129,6 +129,7 @@ const RPSGame = {
   human: createHuman(),
   computer: createComputer(),
   roundCounter: 0,
+  winPoints: null,
   roundWinner: null,
 
   displayWelcomeMessage() {
@@ -167,8 +168,16 @@ const RPSGame = {
       `computer currently wins when it chooses each move:`);
     Object.keys(this.human.memory).forEach(key => {
       console.log(`     ${key} : ` +
-      `${this.human.memory[key]["percentageOpponentWon"] * 100}%`);
+        `${this.human.memory[key]["percentageOpponentWon"] * 100}%`);
     });
+  },
+
+  displayRoundDetails() {
+    console.clear();
+    this.displayScores();
+    this.displayRoundMoves();
+    this.displayRoundWinner(this.roundWinner);
+    this.displayHumanSuggestion();
   },
 
   assessRoundWinner() {
@@ -182,21 +191,23 @@ const RPSGame = {
   },
 
   updateMemory() {
-    this.human.memory[this.computer.move]["timesOpponentChose"] += 1;
-    this.computer.memory[this.human.move]["timesOpponentChose"] += 1;
+    let huMemOfCompMove = this.human.memory[this.computer.move];
+    let compMemoryOfHumMove = this.computer.memory[this.human.move];
+    huMemOfCompMove["timesOpponentChose"] += 1;
+    compMemoryOfHumMove["timesOpponentChose"] += 1;
 
     if (this.roundWinner === "human") {
-      this.computer.memory[this.human.move]["timesOpponentWon"] += 1;
+      compMemoryOfHumMove["timesOpponentWon"] += 1;
     } else if (this.roundWinner === "computer") {
-      this.human.memory[this.computer.move]["timesOpponentWon"] += 1;
+      huMemOfCompMove["timesOpponentWon"] += 1;
     }
 
-    this.human.memory[this.computer.move]["percentageOpponentWon"] =
-      this.human.memory[this.computer.move]["timesOpponentWon"] /
-      this.human.memory[this.computer.move]["timesOpponentChose"];
-    this.computer.memory[this.human.move]["percentageOpponentWon"] =
-      this.computer.memory[this.human.move]["timesOpponentWon"] /
-      this.computer.memory[this.human.move]["timesOpponentChose"];
+    huMemOfCompMove["percentageOpponentWon"] =
+      huMemOfCompMove["timesOpponentWon"] /
+      huMemOfCompMove["timesOpponentChose"];
+    compMemoryOfHumMove["percentageOpponentWon"] =
+      compMemoryOfHumMove["timesOpponentWon"] /
+      compMemoryOfHumMove["timesOpponentChose"];
     // if this.roundWinner is a tie, game will just continue
   },
 
@@ -205,10 +216,26 @@ const RPSGame = {
     else if (this.roundWinner === "computer") this.computer.score += 1;
   },
 
-  displayOverallWinner(maxPoints) {
-    if (this.human.score === maxPoints) {
+  playRound() {
+    if (this.roundCounter > 0) {
+      this.displayRoundDetails();
+    }
+    let computerReasonedAdvantage =
+      this.computer.useReasoning(this.computer.memory);
+    this.human.chooseMove();
+    this.computer.chooseMove(computerReasonedAdvantage);
+    this.roundWinner = this.assessRoundWinner();
+    this.updateMemory();
+    this.updateRoundWinnerScore();
+    this.roundCounter += 1;
+  },
+
+  displayOverallWinner() {
+    if (this.human.score === this.winPoints) {
       console.log('   You WON the overall Game!!!');
-    } else console.log('   You LOST! Computer won the overall game!!!');
+    } else {
+      console.log('   You LOST! Computer won the overall game!!!');
+    }
   },
 
   displayGoodbyeMessage() {
@@ -219,46 +246,34 @@ const RPSGame = {
     let answer;
     while (true) {
       console.log('   Would you like to play again? (y/n)');
-      answer = readline.question();
-      if (answer.toLowerCase()[0] === 'y' || answer.toLowerCase()[0] === 'n') {
+      answer = readline.question().toLowerCase();
+      if (answer[0] === 'y' || answer[0] === 'n') {
         break;
       }
     }
-    return answer.toLowerCase()[0] === 'y';
+    return answer[0] === 'y';
   },
 
-  resetScores() {
+  resetRound() {
     this.human.score = 0;
     this.computer.score = 0;
+    this.roundCounter = 0;
   },
 
   // method that contains our procedural code
   mainGamePlay() {
     this.displayWelcomeMessage();
     while (true) {
-      let winPoints = this.human.choosePointsToWin();
-      while (this.human.score < winPoints && this.computer.score < winPoints) {
-        console.clear();
-        if (this.roundCounter > 0) {
-          this.displayScores();
-          this.displayRoundMoves();
-          this.displayRoundWinner(this.roundWinner);
-          this.displayHumanSuggestion()
-        }
-        let computerReasonedAdvantage =
-          this.computer.useReasoning(this.computer.memory);
-        this.human.chooseMove();
-        this.computer.chooseMove(computerReasonedAdvantage);
-        this.roundWinner = this.assessRoundWinner();
-        this.updateMemory();
-        this.updateRoundWinnerScore();
-        this.roundCounter += 1;
-        // console.log(this.computer.memory); // remove later
+      this.winPoints = this.human.choosePointsToWin();
+      while (this.human.score < this.winPoints && this.computer.score <
+        this.winPoints) {
+        this.playRound();
       }
 
-      this.displayOverallWinner(winPoints);
+      this.displayRoundDetails();
+      this.displayOverallWinner();
       if (!this.playAgain()) break;
-      else this.resetScores();
+      else this.resetRound();
     }
 
     this.displayGoodbyeMessage();
